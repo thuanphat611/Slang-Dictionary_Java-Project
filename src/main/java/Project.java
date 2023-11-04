@@ -24,23 +24,35 @@ class SlangUI extends JPanel {
 }
 
 class SlangFunction {
-    ArrayList<String[]> data = new ArrayList<String[]>();
+    ArrayList<String[]> data = new ArrayList<String[]>(); //used to store the data
+    HashMap<String, Integer> slangHashMap = new HashMap<String, Integer>();
+    HashMap<String, Integer> meaningHashMap = new HashMap<String, Integer>();
     String filePath;
     public SlangFunction(String filePath) {
         BufferedReader br;
         String[] columnNames, student;
         String line;
+        String[] meaningList;
 
         this.filePath = filePath;
         try {
             int currentIndex = 0;
             String twoMeaningSlang;
             br = new BufferedReader(new FileReader(filePath));
+
             //remove the first line - instruction line(Slag`Meaning)
             br.readLine().split("`");
-
             while ((line = br.readLine()) != null) {
                 data.add(line.split("`"));
+                slangHashMap.put(data.get(currentIndex)[0], currentIndex);//put slang into slang hashmap for fast searching
+                if (data.get(currentIndex)[1].indexOf("|") == -1) { // if slang has 1 meaning
+                    meaningHashMap.put(data.get(currentIndex)[1].trim(), currentIndex);
+                }
+                else { // if slang has 2 or more meanings
+                    meaningList = data.get(currentIndex)[1].split("|");
+                    for (int i = 0; i < meaningList.length; i++)
+                        meaningHashMap.put(meaningList[i].trim(), currentIndex);
+                }
                 currentIndex++;
             }
             br.close();
