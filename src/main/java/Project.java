@@ -62,6 +62,14 @@ class SlangFunction {
         }
     }
 
+    // return the meaning of an input keyword, if not found return ""
+    String findSlang(String keyword) {
+       if (slangHashMap.get(keyword) == null) {
+           return "";
+       }
+       return data.get(slangHashMap.get(keyword))[1];
+    }
+
     void save() {
         BufferedWriter bw;
         try {
@@ -101,6 +109,7 @@ public class Project {
 //        });
 
         SlangFunction sf = new SlangFunction(filePath);
+        System.out.println(sf.findSlang("ô"));
 //        sf.print();
     }
 }
