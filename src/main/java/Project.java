@@ -25,6 +25,7 @@ class SlangUI extends JPanel {
 
 class SlangFunction {
     ArrayList<String[]> data = new ArrayList<String[]>(); //used to store the data
+    ArrayList<String> history = new ArrayList<String>();
     HashMap<String, Integer> slangHashMap = new HashMap<String, Integer>();
     HashMap<String, Integer> meaningHashMap = new HashMap<String, Integer>();
     String filePath;
@@ -63,11 +64,43 @@ class SlangFunction {
     }
 
     // return the meaning of an input keyword, if not found return ""
-    String findSlang(String keyword) {
+    String findMeaning(String keyword) {
+        keyword = keyword.trim();
+        history.add(keyword); // add keyword to history ArrayList for history function
        if (slangHashMap.get(keyword) == null) {
            return "";
        }
        return data.get(slangHashMap.get(keyword))[1];
+    }
+
+    HashSet<Integer> findSlang(String keyword) {
+        keyword = keyword.trim();
+        history.add(keyword); // add keyword to history ArrayList for history function
+        HashSet<Integer> result = new HashSet<Integer>();
+        for (String key : meaningHashMap.keySet())
+            if (key.indexOf(keyword) != -1)
+                result.add(meaningHashMap.get(key));
+        return result;
+    }
+
+    void addSlang(String slang, String meaning, boolean duplicate) {
+        slang = slang.trim();
+        meaning = meaning.trim();
+        if (findMeaning(slang).isEmpty()) { // new slang
+            String[] newSlang = new String[2];
+            newSlang[0] = slang;
+            newSlang[1] = meaning;
+            slangHashMap.put(slang, data.size());
+            meaningHashMap.put(meaning, data.size());
+            data.add(newSlang);
+            return;
+        }
+        String duplicateMeaning = data.get(slangHashMap.get(slang))[1];
+        if (duplicate) { // duplicate meaning if slang exist
+            duplicateMeaning = duplicateMeaning + " | " + meaning;
+            return;
+        }
+        duplicateMeaning = meaning; // overwrite meaning if slang exist
     }
 
     void save() {
@@ -97,6 +130,12 @@ class SlangFunction {
         for (int i = 0; i< data.size(); i++)
             System.out.println(data.get(i)[0] + " : " + data.get(i)[1]);
     }
+
+    String findByIndex (int index) {
+        if (index > data.size())
+            return "wrong index";
+        return data.get(index)[0];
+    }
 }
 
 public class Project {
@@ -109,7 +148,14 @@ public class Project {
 //        });
 
         SlangFunction sf = new SlangFunction(filePath);
-        System.out.println(sf.findSlang("ô"));
+        Set<Integer> result;
+        result = sf.findSlang("someone");
+        if (result.isEmpty())
+            System.out.println("empty");
+        else
+            for (int item : result)
+                System.out.println(sf.findByIndex(item));
+        sf.save();
 //        sf.print();
     }
 }
