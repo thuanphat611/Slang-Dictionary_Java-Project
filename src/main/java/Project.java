@@ -42,11 +42,11 @@ class SlangFunction {
             br = new BufferedReader(new FileReader(filePath));
 
             //remove the first line - instruction line(Slag`Meaning)
-            br.readLine().split("`");
+            br.readLine();
             while ((line = br.readLine()) != null) {
                 data.add(line.split("`"));
                 slangHashMap.put(data.get(currentIndex)[0], currentIndex);//put slang into slang hashmap for fast searching
-                if (data.get(currentIndex)[1].indexOf("|") == -1) { // if slang has 1 meaning
+                if (!data.get(currentIndex)[1].contains("|")) { // if slang has 1 meaning
                     meaningHashMap.put(data.get(currentIndex)[1].trim(), currentIndex);
                 }
                 else { // if slang has 2 or more meanings
@@ -101,6 +101,59 @@ class SlangFunction {
             return;
         }
         duplicateMeaning = meaning; // overwrite meaning if slang exist
+    }
+
+    void editSlang(String oldMeaning, String newMeaning) {
+        oldMeaning = oldMeaning.trim();
+        newMeaning = newMeaning.trim();
+        int index = meaningHashMap.get(oldMeaning);
+        String currentMeaning = data.get(index)[1];
+
+        if (!currentMeaning.contains("|")) { // slang only has one meaning
+            currentMeaning = newMeaning;
+            return;
+        }
+        // Slang has many meaning(duplicate)
+        String[] meaningList = currentMeaning.split("|");
+        for (String meaning : meaningList)
+            if (meaning.contains(oldMeaning))
+                meaning = newMeaning;
+        currentMeaning = String.join(" | ", meaningList);
+    }
+
+    void deleteSlang(String slang) {
+        slang = slang.trim();
+        int index = slangHashMap.get(slang);
+        String[] meaningList = data.get(index)[1].split("|");
+
+        data.remove(index);
+        slangHashMap.remove(slang);
+        for (String meaning : meaningList) {
+            meaning = meaning.trim();
+            meaningHashMap.remove(meaning);
+        }
+    }
+
+    String[] ramdomSlang() {
+        int random = (int) (Math.random() * data.size());
+        return data.get(random);
+    }
+
+    ArrayList<String[]> slangQuizz() {
+        ArrayList<String[]> randomList = new ArrayList<String[]>();
+        int[] randomIndexes = new int[4];
+        int random = (int) (Math.random() * data.size());
+
+        randomList.add(data.get(random));
+        for (int i = 0; i < 3; i++) {
+            do {
+                random = (int) (Math.random() * data.size());
+            }
+            while (Arrays.asList(randomIndexes).contains(random));
+            randomList.add(data.get(random));
+        }
+
+        return randomList;
     }
 
     void save() {
