@@ -6,13 +6,16 @@ import javax.swing.*;
 
 class SlangUI extends JPanel {
     SlangFunction controller;
-    public SlangUI() {
+    String filePath;
+    public SlangUI(String filePath) {
+        this.filePath = filePath;
+        this.controller = new SlangFunction(filePath);
+
         setLayout(new BorderLayout());
-        String[] randomSlangEX = {"#P", "Phat|Thuan Phat"};
 
         JScrollPane search = createSearchSection();
         JPanel buttonGroup = createButtonGroup();
-        JScrollPane randomSlang = createRandomSlang(randomSlangEX);
+        JScrollPane randomSlang = createRandomSlang(controller.ramdomSlang());
 
         add(search, BorderLayout.PAGE_START);
         add(randomSlang, BorderLayout.CENTER);
@@ -20,25 +23,7 @@ class SlangUI extends JPanel {
     }
 
     JScrollPane createSearchSection() {
-        JTextField searchTextField = new JTextField("Type slang word to search");
-        //Handle search text field placeholder
-        searchTextField.setForeground(Color.GRAY);
-        searchTextField.addFocusListener(new FocusListener() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (searchTextField.getText().equals("Type slang word to search")) {
-                    searchTextField.setText("");
-                    searchTextField.setForeground(Color.BLACK);
-                }
-            }
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (searchTextField.getText().isEmpty()) {
-                    searchTextField.setForeground(Color.GRAY);
-                    searchTextField.setText("Type slang word to search");
-                }
-            }
-        });
+        JTextField searchTextField = new JTextField();
         JButton searchButton = new JButton("Find");
         JPanel searchbar = new JPanel();
         searchbar.setLayout(new BoxLayout(searchbar, BoxLayout.LINE_AXIS));
@@ -139,6 +124,21 @@ class SlangUI extends JPanel {
         buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         JButton reload = new JButton("Change");
         buttonPanel.add(reload);
+        reload.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String[] newSlang = controller.ramdomSlang();
+                StringBuilder contentText = new StringBuilder("Slang: " + newSlang[0] + "\nMeaning:\n");
+                String[] meaningList = newSlang[1].split("\\|");
+                for (int i = 0; i < meaningList.length; i++) {
+                    contentText.append("-").append(meaningList[i].trim());
+                    if (i != (meaningList.length - 1)) {
+                        contentText.append("\n");
+                    }
+                }
+                content.setText(contentText.toString());
+            }
+        });
 
         randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         randomPanel.add(labelPanel);
@@ -151,13 +151,13 @@ class SlangUI extends JPanel {
         return new JScrollPane(randomPanel);
     }
 
-    public static void createAndShowGUI() {
+    public static void createAndShowGUI(String filePath) {
         JFrame.setDefaultLookAndFeelDecorated(true);
 
         JFrame frame = new JFrame("Slang words");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JComponent newContentPane = new SlangUI();
+        JComponent newContentPane = new SlangUI(filePath);
 
         newContentPane.setOpaque(true);
         frame.setContentPane(newContentPane);
@@ -174,14 +174,12 @@ class SlangFunction {
     String filePath;
     public SlangFunction(String filePath) {
         BufferedReader br;
-        String[] columnNames, student;
         String line;
         String[] meaningList;
 
         this.filePath = filePath;
         try {
             int currentIndex = 0;
-            String twoMeaningSlang;
             br = new BufferedReader(new FileReader(filePath));
 
             //remove the first line - instruction line(Slag`Meaning)
@@ -222,7 +220,7 @@ class SlangFunction {
         history.add(keyword); // add keyword to history ArrayList for history function
         HashSet<Integer> result = new HashSet<Integer>();
         for (String key : meaningHashMap.keySet())
-            if (key.indexOf(keyword) != -1)
+            if (key.contains(keyword))
                 result.add(meaningHashMap.get(key));
         return result;
     }
@@ -289,12 +287,14 @@ class SlangFunction {
         int random = (int) (Math.random() * data.size());
 
         randomList.add(data.get(random));
+        randomIndexes[0] = random;
         for (int i = 0; i < 3; i++) {
             do {
                 random = (int) (Math.random() * data.size());
             }
             while (Arrays.asList(randomIndexes).contains(random));
             randomList.add(data.get(random));
+            randomIndexes[randomIndexes.length] = random;
         }
 
         return randomList;
@@ -376,13 +376,13 @@ public class Project {
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                SlangUI.createAndShowGUI();
+                SlangUI.createAndShowGUI(filePath);
             }
         });
 
 //        SlangFunction sf = new SlangFunction(filePath);
 //        Set<Integer> result;
-//        result = sf.findSlang("someone");
+//        result = sf.findSlang("one");
 //        if (result.isEmpty())
 //            System.out.println("empty");
 //        else
