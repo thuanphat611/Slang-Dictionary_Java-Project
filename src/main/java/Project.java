@@ -5,13 +5,15 @@ import java.awt.event.*;
 import javax.swing.*;
 
 class SlangUI extends JPanel {
+
     public SlangUI() {
         setLayout(new BorderLayout());
     }
+
     public static void createAndShowGUI() {
         JFrame.setDefaultLookAndFeelDecorated(true);
 
-        JFrame frame = new JFrame();
+        JFrame frame = new JFrame("Slang words");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JComponent newContentPane = new SlangUI();
@@ -179,6 +181,42 @@ class SlangFunction {
         }
     }
 
+    void reset() {
+        data.clear();
+        slangHashMap.clear();
+        meaningHashMap.clear();
+
+        BufferedReader br;
+        String line;
+        String[] meaningList;
+
+        try {
+            int currentIndex = 0;
+            String twoMeaningSlang;
+            br = new BufferedReader(new FileReader(filePath));
+
+            //remove the first line - instruction line(Slag`Meaning)
+            br.readLine();
+            while ((line = br.readLine()) != null) {
+                data.add(line.split("`"));
+                slangHashMap.put(data.get(currentIndex)[0], currentIndex);//put slang into slang hashmap for fast searching
+                if (!data.get(currentIndex)[1].contains("|")) { // if slang has 1 meaning
+                    meaningHashMap.put(data.get(currentIndex)[1].trim(), currentIndex);
+                }
+                else { // if slang has 2 or more meanings
+                    meaningList = data.get(currentIndex)[1].split("|");
+                    for (int i = 0; i < meaningList.length; i++)
+                        meaningHashMap.put(meaningList[i].trim(), currentIndex);
+                }
+                currentIndex++;
+            }
+            br.close();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     void print() {
         for (int i = 0; i< data.size(); i++)
             System.out.println(data.get(i)[0] + " : " + data.get(i)[1]);
@@ -194,21 +232,21 @@ class SlangFunction {
 public class Project {
     static final String filePath = "C:\\LTUD Java\\Project01\\slang.txt";
     public static void main(String[] args) {
-//        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-//            public void run() {
-//                SlangUI.createAndShowGUI();
-//            }
-//        });
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                SlangUI.createAndShowGUI();
+            }
+        });
 
-        SlangFunction sf = new SlangFunction(filePath);
-        Set<Integer> result;
-        result = sf.findSlang("someone");
-        if (result.isEmpty())
-            System.out.println("empty");
-        else
-            for (int item : result)
-                System.out.println(sf.findByIndex(item));
-        sf.save();
+//        SlangFunction sf = new SlangFunction(filePath);
+//        Set<Integer> result;
+//        result = sf.findSlang("someone");
+//        if (result.isEmpty())
+//            System.out.println("empty");
+//        else
+//            for (int item : result)
+//                System.out.println(sf.findByIndex(item));
+//        sf.save();
 //        sf.print();
     }
 }
