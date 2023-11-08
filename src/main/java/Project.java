@@ -8,10 +8,12 @@ import javax.swing.*;
 class historyPanel extends JPanel {
     JPanel previous;
     JFrame parentFrame;
-    ArrayList<String> history;
+    String textPanelContent;
+    JTextPane historyText;
     public historyPanel(JPanel pre, JFrame parentFrame) {
         this.previous = pre;
         this.parentFrame = parentFrame;
+        textPanelContent = "No history";
 
         setLayout(new BorderLayout());
 
@@ -20,14 +22,13 @@ class historyPanel extends JPanel {
         labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         labelPanel.add(label);
 
-        String historyText = historyToString();
         JPanel textPane = new JPanel();
         textPane.setLayout(new BoxLayout(textPane, BoxLayout.LINE_AXIS));
-        JTextPane content = new JTextPane();
-        content.setEditable(false);
-        content.setCaretColor(Color.WHITE);
-        JScrollPane textSP = new JScrollPane(content);
-        content.setText(historyText);
+
+        historyText = new JTextPane();
+        historyText.setEditable(false);
+        historyText.setCaretColor(Color.WHITE);
+        JScrollPane textSP = new JScrollPane(historyText);
 
         JButton backBtn = new JButton("Back");
         JPanel buttonPnl = new JPanel();
@@ -47,21 +48,22 @@ class historyPanel extends JPanel {
         add(buttonPnl, BorderLayout.PAGE_END);
     }
 
-    void setHistory(ArrayList<String> history) {
-        this.history = history;
-    }
-
-    String historyToString() {
-        if (history == null)
-            return "No history";
-        StringBuilder result = new StringBuilder();
+    void historyToString(ArrayList<String> history) {
+        if (history == null) {
+            return;
+        }
+        if (history.isEmpty()) {
+            return;
+        }
+        textPanelContent = "";
 
         for (int i = 0; i< history.size(); i++) {
-            result.append(history.get(i));
+            textPanelContent = textPanelContent + history.get(i);
             if (i != history.size() - 1)
-                result.append("\n");
+                textPanelContent = textPanelContent + "\n";
         }
-        return result.toString();
+
+        historyText.setText(textPanelContent);
     }
 }
 
@@ -156,14 +158,12 @@ class mainPanel extends JPanel {
                 String keyword = searchTextField.getText();
                 if (type.equals("slang")) {
                     String result = controller.findMeaning(keyword);
-                    System.out.println(result);
                     parentFrame.setContentPane(resultPanel);
                     parentFrame.validate();
                 }
                 else {
                     HashSet<String> result = controller.findSlang(keyword);
-                    for (String i : result)
-                        System.out.println(i);
+//                    for (String i : result)
                 }
             }
         });
@@ -197,7 +197,6 @@ class mainPanel extends JPanel {
         buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         historyPanel historyPnl = new historyPanel(this, parentFrame);
-        historyPnl.setHistory(controller.getHistory());
         reset.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -207,6 +206,7 @@ class mainPanel extends JPanel {
         history.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                historyPnl.historyToString(controller.getHistory());
                 parentFrame.setContentPane(historyPnl);
                 parentFrame.validate();
             }
@@ -343,8 +343,7 @@ class SlangFunction {
 
     HashSet<String> findSlang(String keyword) {
         keyword = keyword.trim();
-        String newHistory = keyword;
-        history.add(newHistory); // add keyword to history ArrayList for history function
+        history.add(keyword); // add keyword to history ArrayList for history function
         HashSet<Integer> result = new HashSet<Integer>();
         for (String key : meaningHashMap.keySet())
             if (key.contains(keyword))
