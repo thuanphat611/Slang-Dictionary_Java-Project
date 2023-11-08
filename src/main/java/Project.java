@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
+import static javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE;
+
 class SlangUI extends JPanel {
     SlangFunction controller;
     String filePath;
@@ -20,11 +22,15 @@ class SlangUI extends JPanel {
         add(search, BorderLayout.PAGE_START);
         add(randomSlang, BorderLayout.CENTER);
         add(buttonGroup, BorderLayout.PAGE_END);
+
+
     }
 
     JScrollPane createSearchSection() {
         JTextField searchTextField = new JTextField();
         JButton searchButton = new JButton("Find");
+
+
         JPanel searchbar = new JPanel();
         searchbar.setLayout(new BoxLayout(searchbar, BoxLayout.LINE_AXIS));
         searchbar.add(Box.createRigidArea(new Dimension(10, 0)));
@@ -59,6 +65,22 @@ class SlangUI extends JPanel {
         searchPanel.add(searchType);
         searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
+        searchButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String type = searchTypeCB.getSelectedItem().toString();
+                String keyword = searchTextField.getText();
+                if (type.equals("slang")) {
+                    String result = controller.findMeaning(keyword);
+                    System.out.println(result);
+
+                }
+                else {
+                    HashSet<String> result = controller.findSlang(keyword);
+                    for (String i : result)
+                        System.out.println(i);
+                }
+            }
+        });
         return new JScrollPane(searchPanel);
     }
 
@@ -88,6 +110,12 @@ class SlangUI extends JPanel {
         buttonPanel.add(buttonGroup);
         buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
+        reset.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.reset();
+            }
+        });
         return buttonPanel;
     }
 
@@ -155,9 +183,16 @@ class SlangUI extends JPanel {
         JFrame.setDefaultLookAndFeelDecorated(true);
 
         JFrame frame = new JFrame("Slang words");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
         JComponent newContentPane = new SlangUI(filePath);
+
+        frame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                System.out.println("closed");
+                frame.dispose();
+            }
+        });
 
         newContentPane.setOpaque(true);
         frame.setContentPane(newContentPane);
@@ -215,14 +250,18 @@ class SlangFunction {
        return data.get(slangHashMap.get(keyword))[1];
     }
 
-    HashSet<Integer> findSlang(String keyword) {
+    HashSet<String> findSlang(String keyword) {
         keyword = keyword.trim();
         history.add(keyword); // add keyword to history ArrayList for history function
         HashSet<Integer> result = new HashSet<Integer>();
         for (String key : meaningHashMap.keySet())
             if (key.contains(keyword))
                 result.add(meaningHashMap.get(key));
-        return result;
+        HashSet<String> slangList = new HashSet<String>();
+        for (int i : result) {
+            slangList.add(data.get(i)[0]);
+        }
+        return slangList;
     }
 
     void addSlang(String slang, String meaning, boolean duplicate) {
