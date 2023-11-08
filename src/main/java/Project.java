@@ -2,7 +2,89 @@ import java.io.*;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.jar.JarEntry;
 import javax.swing.*;
+
+class historyPanel extends JPanel {
+    JPanel previous;
+    JFrame parentFrame;
+    ArrayList<String> history;
+    public historyPanel(JPanel pre, JFrame parentFrame) {
+        this.previous = pre;
+        this.parentFrame = parentFrame;
+
+        setLayout(new BorderLayout());
+
+        JLabel label = new JLabel("Search history");
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        labelPanel.add(label);
+
+        String historyText = historyToString();
+        JPanel textPane = new JPanel();
+        textPane.setLayout(new BoxLayout(textPane, BoxLayout.LINE_AXIS));
+        JTextPane content = new JTextPane();
+        content.setEditable(false);
+        content.setCaretColor(Color.WHITE);
+        JScrollPane textSP = new JScrollPane(content);
+        content.setText(historyText);
+
+        JButton backBtn = new JButton("Back");
+        JPanel buttonPnl = new JPanel();
+        buttonPnl.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonPnl.add(backBtn);
+
+        backBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setContentPane(previous);
+                parentFrame.validate();
+            }
+        });
+
+        add(labelPanel, BorderLayout.PAGE_START);
+        add(textSP, BorderLayout.CENTER);
+        add(buttonPnl, BorderLayout.PAGE_END);
+    }
+
+    void setHistory(ArrayList<String> history) {
+        this.history = history;
+    }
+
+    String historyToString() {
+        if (history == null)
+            return "No history";
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i< history.size(); i++) {
+            result.append(history.get(i));
+            if (i != history.size() - 1)
+                result.append("\n");
+        }
+        return result.toString();
+    }
+}
+
+class searchResultPanel extends JPanel {
+    JPanel previous;
+    JFrame parentFrame;
+    public searchResultPanel(mainPanel pre, JFrame parentFrame) {
+        this.previous = pre;
+        this.parentFrame = parentFrame;
+        setLayout(new FlowLayout());
+        JButton edit = new JButton("Back");
+        edit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setContentPane(pre);
+                parentFrame.validate();
+            }
+        });
+        add(edit);
+    }
+
+
+}
 
 class mainPanel extends JPanel {
     SlangFunction controller;
@@ -32,7 +114,6 @@ class mainPanel extends JPanel {
     JScrollPane createSearchSection() {
         JTextField searchTextField = new JTextField();
         JButton searchButton = new JButton("Find");
-
 
         JPanel searchbar = new JPanel();
         searchbar.setLayout(new BoxLayout(searchbar, BoxLayout.LINE_AXIS));
@@ -68,6 +149,7 @@ class mainPanel extends JPanel {
         searchPanel.add(searchType);
         searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
+        searchResultPanel resultPanel = new searchResultPanel(this, parentFrame);
         searchButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String type = searchTypeCB.getSelectedItem().toString();
@@ -75,7 +157,8 @@ class mainPanel extends JPanel {
                 if (type.equals("slang")) {
                     String result = controller.findMeaning(keyword);
                     System.out.println(result);
-
+                    parentFrame.setContentPane(resultPanel);
+                    parentFrame.validate();
                 }
                 else {
                     HashSet<String> result = controller.findSlang(keyword);
@@ -113,10 +196,19 @@ class mainPanel extends JPanel {
         buttonPanel.add(buttonGroup);
         buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
+        historyPanel historyPnl = new historyPanel(this, parentFrame);
+        historyPnl.setHistory(controller.getHistory());
         reset.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 controller.reset();
+            }
+        });
+        history.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setContentPane(historyPnl);
+                parentFrame.validate();
             }
         });
         return buttonPanel;
@@ -251,7 +343,8 @@ class SlangFunction {
 
     HashSet<String> findSlang(String keyword) {
         keyword = keyword.trim();
-        history.add(keyword); // add keyword to history ArrayList for history function
+        String newHistory = keyword;
+        history.add(newHistory); // add keyword to history ArrayList for history function
         HashSet<Integer> result = new HashSet<Integer>();
         for (String key : meaningHashMap.keySet())
             if (key.contains(keyword))
@@ -317,6 +410,10 @@ class SlangFunction {
     String[] ramdomSlang() {
         int random = (int) (Math.random() * data.size());
         return data.get(random);
+    }
+
+    ArrayList<String> getHistory() {
+        return history;
     }
 
     ArrayList<String[]> slangQuizz() {
