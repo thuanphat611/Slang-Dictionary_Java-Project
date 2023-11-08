@@ -5,9 +5,150 @@ import java.awt.event.*;
 import javax.swing.*;
 
 class SlangUI extends JPanel {
-
+    SlangFunction controller;
     public SlangUI() {
         setLayout(new BorderLayout());
+        String[] randomSlangEX = {"#P", "Phat|Thuan Phat"};
+
+        JScrollPane search = createSearchSection();
+        JPanel buttonGroup = createButtonGroup();
+        JScrollPane randomSlang = createRandomSlang(randomSlangEX);
+
+        add(search, BorderLayout.PAGE_START);
+        add(randomSlang, BorderLayout.CENTER);
+        add(buttonGroup, BorderLayout.PAGE_END);
+    }
+
+    JScrollPane createSearchSection() {
+        JTextField searchTextField = new JTextField("Type slang word to search");
+        //Handle search text field placeholder
+        searchTextField.setForeground(Color.GRAY);
+        searchTextField.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (searchTextField.getText().equals("Type slang word to search")) {
+                    searchTextField.setText("");
+                    searchTextField.setForeground(Color.BLACK);
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchTextField.getText().isEmpty()) {
+                    searchTextField.setForeground(Color.GRAY);
+                    searchTextField.setText("Type slang word to search");
+                }
+            }
+        });
+        JButton searchButton = new JButton("Find");
+        JPanel searchbar = new JPanel();
+        searchbar.setLayout(new BoxLayout(searchbar, BoxLayout.LINE_AXIS));
+        searchbar.add(Box.createRigidArea(new Dimension(10, 0)));
+        searchbar.add(searchTextField);
+        searchbar.add(Box.createRigidArea(new Dimension(10, 0)));
+        searchbar.add(searchButton);
+        searchbar.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        JLabel searchTypeLabel = new JLabel("Search by:");
+        String[] searchTypeList = {"slang", "definition"};
+        JComboBox searchTypeCB = new JComboBox(searchTypeList);
+        searchTypeCB.setPreferredSize(new Dimension(20, 20));
+        JPanel searchType = new JPanel();
+        searchType.setLayout(new BoxLayout(searchType, BoxLayout.LINE_AXIS));
+        searchType.add(Box.createRigidArea(new Dimension(10, 0)));
+        searchType.add(searchTypeLabel);
+        searchType.add(Box.createRigidArea(new Dimension(10, 0)));
+        searchType.add(searchTypeCB);
+        searchType.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        JPanel searchPanel = new JPanel();
+        searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.PAGE_AXIS));
+        JPanel searchLabelPanel = new JPanel();
+        searchLabelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        JLabel searchLabel = new JLabel("Search");
+        searchLabelPanel.add(searchLabel);
+        searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        searchPanel.add(searchLabelPanel);
+        searchPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        searchPanel.add(searchbar);
+        searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        searchPanel.add(searchType);
+        searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        return new JScrollPane(searchPanel);
+    }
+
+    JPanel createButtonGroup() {
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.PAGE_AXIS));
+
+        JPanel buttonGroup = new JPanel();
+        buttonGroup.setLayout(new BoxLayout(buttonGroup, BoxLayout.LINE_AXIS));
+
+        JButton history = new JButton("History");
+        JButton add = new JButton("Add slang");
+        JButton quizz= new JButton("Quizz");
+        JButton reset = new JButton("Reset");
+
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonGroup.add(history);
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonGroup.add(add);
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonGroup.add(quizz);
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonGroup.add(reset);
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        buttonPanel.add(buttonGroup);
+        buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        return buttonPanel;
+    }
+
+    JScrollPane createRandomSlang(String[] slang) {
+        StringBuilder contentText = new StringBuilder("Slang: " + slang[0] + "\nMeaning:\n");
+        String[] meaningList = slang[1].split("\\|");
+        for (int i = 0; i < meaningList.length; i++) {
+            contentText.append("-").append(meaningList[i].trim());
+            if (i != (meaningList.length - 1)) {
+                contentText.append("\n");
+            }
+        }
+        JPanel randomPanel = new JPanel();
+        randomPanel.setLayout(new BoxLayout(randomPanel, BoxLayout.PAGE_AXIS));
+
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        JLabel label = new JLabel("On this day slang word");
+        labelPanel.add(label);
+
+        JPanel textPane = new JPanel();
+        textPane.setLayout(new BoxLayout(textPane, BoxLayout.LINE_AXIS));
+        JTextPane content = new JTextPane();
+        content.setEditable(false);
+        content.setCaretColor(Color.WHITE);
+        JScrollPane textSP = new JScrollPane(content);
+        textSP.setPreferredSize(new Dimension(0, 100));
+        content.setText(contentText.toString());
+        textPane.add(Box.createRigidArea(new Dimension(10, 0)));
+        textPane.add(textSP);
+        textPane.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        JButton reload = new JButton("Change");
+        buttonPanel.add(reload);
+
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        randomPanel.add(labelPanel);
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        randomPanel.add(textPane);
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        randomPanel.add(buttonPanel);
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        return new JScrollPane(randomPanel);
     }
 
     public static void createAndShowGUI() {
@@ -52,9 +193,10 @@ class SlangFunction {
                     meaningHashMap.put(data.get(currentIndex)[1].trim(), currentIndex);
                 }
                 else { // if slang has 2 or more meanings
-                    meaningList = data.get(currentIndex)[1].split("|");
-                    for (int i = 0; i < meaningList.length; i++)
+                    meaningList = data.get(currentIndex)[1].split("\\|");
+                    for (int i = 0; i < meaningList.length; i++) {
                         meaningHashMap.put(meaningList[i].trim(), currentIndex);
+                    }
                 }
                 currentIndex++;
             }
@@ -116,7 +258,7 @@ class SlangFunction {
             return;
         }
         // Slang has many meaning(duplicate)
-        String[] meaningList = currentMeaning.split("|");
+        String[] meaningList = currentMeaning.split("\\|");
         for (String meaning : meaningList)
             if (meaning.contains(oldMeaning))
                 meaning = newMeaning;
@@ -126,7 +268,7 @@ class SlangFunction {
     void deleteSlang(String slang) {
         slang = slang.trim();
         int index = slangHashMap.get(slang);
-        String[] meaningList = data.get(index)[1].split("|");
+        String[] meaningList = data.get(index)[1].split("\\|");
 
         data.remove(index);
         slangHashMap.remove(slang);
@@ -204,7 +346,7 @@ class SlangFunction {
                     meaningHashMap.put(data.get(currentIndex)[1].trim(), currentIndex);
                 }
                 else { // if slang has 2 or more meanings
-                    meaningList = data.get(currentIndex)[1].split("|");
+                    meaningList = data.get(currentIndex)[1].split("\\|");
                     for (int i = 0; i < meaningList.length; i++)
                         meaningHashMap.put(meaningList[i].trim(), currentIndex);
                 }
