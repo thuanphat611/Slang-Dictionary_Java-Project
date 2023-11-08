@@ -4,15 +4,20 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-import static javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE;
-
-class SlangUI extends JPanel {
+class mainPanel extends JPanel {
     SlangFunction controller;
     String filePath;
-    public SlangUI(String filePath) {
+    JFrame parentFrame;
+    public mainPanel(String filePath, JFrame parent) {
+        this.parentFrame = parent;
         this.filePath = filePath;
         this.controller = new SlangFunction(filePath);
 
+        parentFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                controller.save();
+            }
+        });
         setLayout(new BorderLayout());
 
         JScrollPane search = createSearchSection();
@@ -22,8 +27,6 @@ class SlangUI extends JPanel {
         add(search, BorderLayout.PAGE_START);
         add(randomSlang, BorderLayout.CENTER);
         add(buttonGroup, BorderLayout.PAGE_END);
-
-
     }
 
     JScrollPane createSearchSection() {
@@ -178,26 +181,22 @@ class SlangUI extends JPanel {
 
         return new JScrollPane(randomPanel);
     }
+}
+class SlangUI extends JFrame {
+    public SlangUI(String title) {
+        this.setTitle(title);
+    }
 
-    public static void createAndShowGUI(String filePath) {
-        JFrame.setDefaultLookAndFeelDecorated(true);
+    public void createAndShowGUI(String filePath) {
+        setDefaultLookAndFeelDecorated(true);
+        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        JFrame frame = new JFrame("Slang words");
-        frame.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-
-        JComponent newContentPane = new SlangUI(filePath);
-
-        frame.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                System.out.println("closed");
-                frame.dispose();
-            }
-        });
+        JPanel newContentPane = new mainPanel(filePath, this);
 
         newContentPane.setOpaque(true);
-        frame.setContentPane(newContentPane);
-        frame.pack();
-        frame.setVisible(true);
+        this.setContentPane(newContentPane);
+        this.pack();
+        this.setVisible(true);
     }
 }
 
@@ -413,11 +412,13 @@ class SlangFunction {
 public class Project {
     static final String filePath = "C:\\LTUD Java\\Project01\\slang.txt";
     public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                SlangUI.createAndShowGUI(filePath);
-            }
-        });
+//        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+//            public void run() {
+//                SlangUI.createAndShowGUI(filePath);
+//            }
+//        });
+        SlangUI app = new SlangUI("Slang Word");
+        app.createAndShowGUI(filePath);
 
 //        SlangFunction sf = new SlangFunction(filePath);
 //        Set<Integer> result;
