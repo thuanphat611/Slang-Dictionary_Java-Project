@@ -320,9 +320,7 @@ class editSlangPanel extends JPanel {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.PAGE_AXIS));
         textFieldList =  new ArrayList<JTextField>();
 
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BorderLayout());
-        JLabel panelLabel = new JLabel("Add slang word");
+        JLabel panelLabel = new JLabel("Edit slang word");
         JPanel labelPanel = new JPanel();
         labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         labelPanel.add(panelLabel);
@@ -422,6 +420,109 @@ class editSlangPanel extends JPanel {
         }
 
         contentPanel.add(slangPanelWrapper);
+    }
+}
+
+class SlangQuizzPanel extends JPanel {
+    mainPanel previous;
+    JFrame parentFrame;
+    JPanel answersPanel;
+    JLabel questionNumber;
+    ArrayList<String[]> questionList;
+    int currentQuestion;
+    int numCorrect;
+    public SlangQuizzPanel(mainPanel pre, JFrame parent) {
+        this.previous = pre;
+        this.parentFrame = parent;
+        SlangFunction controller = previous.getController();
+        this.questionList = controller.slangQuizz();
+        this.currentQuestion = 1;
+        this.numCorrect = 0;
+        answersPanel = new JPanel();
+        answersPanel.setLayout(new BoxLayout(answersPanel, BoxLayout.PAGE_AXIS));
+        questionNumber = new JLabel();
+        createQuizz();
+
+        setLayout(new BorderLayout());
+
+//        JLabel panelLabel = new JLabel("Question");
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        labelPanel.add(questionNumber);
+
+        JScrollPane answerPanelSP = new JScrollPane(answersPanel);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
+        JPanel buttonPanelWrapper = new JPanel();
+        buttonPanelWrapper.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonPanelWrapper.add(buttonPanel);
+        JButton exitBtn = new JButton("Exit");
+        buttonPanel.add(exitBtn);
+        exitBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                currentQuestion = 1;
+                questionList = controller.slangQuizz();
+                numCorrect = 0;
+                createQuizz();
+                parentFrame.setContentPane(previous);
+                parentFrame.validate();
+            }
+        });
+
+        add(labelPanel, BorderLayout.PAGE_START);
+        add(answerPanelSP, BorderLayout.CENTER);
+        add(buttonPanelWrapper, BorderLayout.PAGE_END);
+    }
+
+    void createQuizz() {
+        questionNumber.setText("Question " + currentQuestion + "/5");
+        answersPanel.removeAll();
+
+        int answerIndex = (int) (Math.random() * 4);
+
+        JLabel questionLabel = new JLabel(questionList.get(answerIndex)[0] + " means:");
+        JPanel question = new JPanel();
+        question.setLayout(new FlowLayout(FlowLayout.CENTER));
+        question.add(questionLabel);
+        JScrollPane questionSP = new JScrollPane(question);
+        answersPanel.add(questionSP);
+        answersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        for (int i  = 0; i < questionList.size(); i++) {
+            int current = i;
+            JPanel answer = new JPanel();
+            answer.setLayout(new BorderLayout());
+            JButton answerBtn = new JButton(questionList.get(i)[1].split("\\|")[0]);
+            answer.add(answerBtn, BorderLayout.CENTER);
+            answersPanel.add(answer);
+            answersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+            answerBtn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    boolean isAnswer = false;
+                    if (current == answerIndex)
+                        isAnswer = true;
+                    if (isAnswer)
+                        numCorrect++;
+                    currentQuestion++;
+
+                    if (currentQuestion <= 5) {
+                        SlangFunction controller = previous.getController();
+                        questionList = controller.slangQuizz();
+                        createQuizz();
+                    }
+                    else {
+                        JOptionPane.showMessageDialog(parentFrame, "Your score: " + numCorrect + "/5");
+                        parentFrame.setContentPane(previous);
+                        parentFrame.validate();
+                    }
+
+                }
+            });
+        }
     }
 }
 
@@ -550,6 +651,14 @@ class mainPanel extends JPanel {
 
         historyPanel historyPnl = new historyPanel(this, parentFrame);
         AddSlangPanel addSlangPnl = new AddSlangPanel(this, parentFrame);
+        SlangQuizzPanel quizzPnl = new SlangQuizzPanel(this, parentFrame);
+        quizzBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setContentPane(quizzPnl);
+                parentFrame.validate();
+            }
+        });
         resetBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -822,7 +931,7 @@ class SlangFunction {
             }
             while (Arrays.asList(randomIndexes).contains(random));
             randomList.add(data.get(random));
-            randomIndexes[randomIndexes.length] = random;
+            randomIndexes[i + 1] = random;
         }
 
         return randomList;
