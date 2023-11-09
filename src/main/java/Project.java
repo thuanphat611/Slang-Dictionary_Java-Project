@@ -257,6 +257,16 @@ class searchResultPanel extends JPanel {
         JButton editBtn = new JButton("Edit");
         JButton deleteBtn = new JButton("Delete");
 
+        editSlangPanel editPanel = new editSlangPanel(previous, parentFrame);
+
+        editBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                editPanel.setContent(data);
+                parentFrame.setContentPane(editPanel);
+                parentFrame.validate();
+            }
+        });
         deleteBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -282,7 +292,7 @@ class searchResultPanel extends JPanel {
         slangPanel.add(slangLabel);
         slangPanel.add(meaningLabel);
 
-        resultItemPanel.add(slangPanel, BorderLayout.LINE_START);
+        resultItemPanel.add(slangPanel, BorderLayout.CENTER);
         resultItemPanel.add(buttonGroupWrapper, BorderLayout.PAGE_END);
         for (String i : meaning.split("\\|")) {
             JLabel meaningText = new JLabel("-" + i.trim());
@@ -292,6 +302,126 @@ class searchResultPanel extends JPanel {
         resultPanelWrapper.setLayout(new BorderLayout());
         resultPanelWrapper.add(resultItemPanel, BorderLayout.PAGE_START);
         return resultPanelWrapper;
+    }
+}
+
+class editSlangPanel extends JPanel {
+    mainPanel previous;
+    JFrame parentFrame;
+    JPanel contentPanel;
+    ArrayList<JTextField> textFieldList;
+    String[] currentWord;
+    public editSlangPanel(mainPanel pre, JFrame parent) {
+        this.previous = pre;
+        this.parentFrame = parent;
+
+        setLayout(new BorderLayout());
+        contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.PAGE_AXIS));
+        textFieldList =  new ArrayList<JTextField>();
+
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        JLabel panelLabel = new JLabel("Add slang word");
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        labelPanel.add(panelLabel);
+
+        JScrollPane slangEditPanel = new JScrollPane(contentPanel);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.LINE_AXIS));
+        JPanel buttonPanelWrapper = new JPanel();
+        buttonPanelWrapper.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonPanelWrapper.add(buttonPanel);
+        JButton saveBtn = new JButton("Save");
+        JButton backBtn = new JButton("Back");
+        buttonPanel.add(saveBtn);
+        buttonPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonPanel.add(backBtn);
+        saveBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SlangFunction controller = previous.getController();
+                String[] newWord = new String[2];
+                newWord[1] = "";
+                newWord[0] = textFieldList.get(0).getText().trim();
+                for (int i = 1; i < textFieldList.size(); i++)
+                    if (!newWord[1].isEmpty())
+                        newWord[1] = newWord[1] + " | " + textFieldList.get(i).getText().trim();
+                    else
+                        newWord[1] = textFieldList.get(i).getText().trim();
+                controller.editSlang(currentWord, newWord);
+                JOptionPane.showMessageDialog(parentFrame, "Edit slang word success");
+                for (JTextField tf : textFieldList)
+                    tf.setText("");
+                parentFrame.setContentPane(previous);
+                parentFrame.validate();
+            }
+        });
+        backBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setContentPane(previous);
+                parentFrame.validate();
+            }
+        });
+
+        add(labelPanel, BorderLayout.PAGE_START);
+        add(slangEditPanel, BorderLayout.CENTER);
+        add(buttonPanelWrapper, BorderLayout.PAGE_END);
+    }
+
+    void setContent(String[] slangWord) {
+        currentWord = slangWord;
+        contentPanel.removeAll();
+        textFieldList.clear();
+        JPanel slangPanelWrapper = new JPanel();
+        slangPanelWrapper.setLayout(new BorderLayout());
+        JPanel slangPanel = new JPanel();
+        slangPanel.setLayout(new BoxLayout(slangPanel, BoxLayout.PAGE_AXIS));
+        slangPanelWrapper.add(slangPanel, BorderLayout.PAGE_START);
+
+        SlangFunction controller = previous.getController();
+
+        JPanel slangInput = new JPanel();
+        slangInput.setLayout(new BoxLayout(slangInput, BoxLayout.LINE_AXIS));
+        JLabel slangLabel = new JLabel("slang:");
+        JTextField slangTF = new JTextField();
+        slangTF.setText(slangWord[0]);
+        slangInput.add(Box.createRigidArea(new Dimension(10, 0)));
+        slangInput.add(slangLabel);
+        slangInput.add(Box.createRigidArea(new Dimension(10, 0)));
+        slangInput.add(slangTF);
+        slangInput.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        slangPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        slangPanel.add(slangInput);
+        textFieldList.add(slangTF);
+        slangPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JPanel meaningLabelWrapper = new JPanel();
+        meaningLabelWrapper.setLayout(new FlowLayout(FlowLayout.LEFT));
+        JLabel meaningLabel = new JLabel("  Meaning:");
+        meaningLabelWrapper.add(meaningLabel);
+        slangPanel.add(meaningLabelWrapper);
+        slangPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        String[] meaningList = slangWord[1].split("\\|");
+        for (int i = 0; i < meaningList.length; i++) {
+            JPanel meaningWrapper = new JPanel();
+            meaningWrapper.setLayout(new BoxLayout(meaningWrapper, BoxLayout.LINE_AXIS));
+            JTextField meaningTF = new JTextField();
+            meaningTF.setText(meaningList[i].trim());
+            textFieldList.add(meaningTF);
+            meaningWrapper.add(Box.createRigidArea(new Dimension(10, 0)));
+            meaningWrapper.add(meaningTF);
+            meaningWrapper.add(Box.createRigidArea(new Dimension(10, 0)));
+            slangPanel.add(meaningWrapper);
+            slangPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        }
+
+        contentPanel.add(slangPanelWrapper);
     }
 }
 
@@ -507,6 +637,7 @@ class mainPanel extends JPanel {
         return new JScrollPane(randomPanel);
     }
 }
+
 class SlangUI extends JFrame {
     public SlangUI(String title) {
         this.setTitle(title);
@@ -613,22 +744,47 @@ class SlangFunction {
         data.set(slangHashMap.get(slang), newSlang);
     }
 
-    void editSlang(String oldMeaning, String newMeaning) {
-        oldMeaning = oldMeaning.trim();
-        newMeaning = newMeaning.trim();
-        int index = meaningHashMap.get(oldMeaning);
-        String currentMeaning = data.get(index)[1];
+    void editSlang(String[] oldWord, String[] newWord) {
+        String oldSlang = oldWord[0].trim();
+        String newSlang = newWord[0].trim();
+        boolean existed = false;
+        if (slangHashMap.get(newSlang) == null) {//change to a new slang
+            int index = slangHashMap.get(oldSlang);
+            slangHashMap.remove(oldSlang);
+            for (String j : oldWord[1].split("\\|"))
+                meaningHashMap.remove(j.trim());
+            data.remove(index);
 
-        if (!currentMeaning.contains("|")) { // slang only has one meaning
-            currentMeaning = newMeaning;
+            slangHashMap.put(newSlang, index);
+            for (String i : newWord[1].split("\\|"))
+                meaningHashMap.put(i.trim(), index);
+            data.add(index, newWord);
             return;
         }
-        // Slang has many meaning(duplicate)
-        String[] meaningList = currentMeaning.split("\\|");
-        for (String meaning : meaningList)
-            if (meaning.contains(oldMeaning))
-                meaning = newMeaning;
-        currentMeaning = String.join(" | ", meaningList);
+        //Check if the user changes a slang word to an existing slang word
+        if (slangHashMap.get(oldSlang) != slangHashMap.get(newSlang) && slangHashMap.get(newSlang) != null) {
+            int index = slangHashMap.get(oldSlang);
+            slangHashMap.remove(oldSlang);
+            for (String j : oldWord[1].split("\\|"))
+                meaningHashMap.remove(j.trim());
+            data.remove(index);
+
+            int existedWordIndex = slangHashMap.get(newSlang);
+            String[] newMeaningList = newWord[1].split("\\|");
+            for (int i = 0; i < newMeaningList.length; i++) {
+                if (data.get(existedWordIndex)[1].contains(newMeaningList[i].trim())) {
+                    continue;
+                }
+                meaningHashMap.put(newMeaningList[i].trim(), slangHashMap.get(newSlang));
+                String[] newMeaning = data.get(existedWordIndex);
+                if (!newMeaning[1].isEmpty())
+                    newMeaning[1] = newMeaning[1] + " | " + newMeaningList[i].trim();
+                else
+                    newMeaning[1] = newMeaningList[i].trim();
+                data.set(existedWordIndex, newMeaning);
+            }
+        }
+
     }
 
     void deleteSlang(String slang) {
