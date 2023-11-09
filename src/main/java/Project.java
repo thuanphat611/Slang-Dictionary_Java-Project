@@ -14,6 +14,8 @@ class historyPanel extends JPanel {
         this.previous = pre;
         this.parentFrame = parentFrame;
         textPanelContent = "No history";
+        historyText = new JTextPane();
+        historyText.setText(textPanelContent);
 
         setLayout(new BorderLayout());
 
@@ -25,7 +27,6 @@ class historyPanel extends JPanel {
         JPanel textPane = new JPanel();
         textPane.setLayout(new BoxLayout(textPane, BoxLayout.LINE_AXIS));
 
-        historyText = new JTextPane();
         historyText.setEditable(false);
         historyText.setCaretColor(Color.WHITE);
         JScrollPane textSP = new JScrollPane(historyText);
@@ -67,6 +68,101 @@ class historyPanel extends JPanel {
     }
 }
 
+class AddSlangPanel extends JPanel {
+    mainPanel previous;
+    JFrame parentFrame;
+    public AddSlangPanel(mainPanel pre, JFrame parent) {
+        this.previous = pre;
+        this.parentFrame = parent;
+
+        setLayout(new BorderLayout());
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        JLabel panelLabel = new JLabel("Add slang word");
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        labelPanel.add(panelLabel);
+
+        JLabel slangLabel = new JLabel("Slang word:");
+        JLabel meaningLabel = new JLabel("Meaning:");
+        JTextField slangTextField = new JTextField();
+        JTextField meaningTextField = new JTextField();
+        JPanel slangRow = new JPanel();
+        slangRow.setLayout(new BoxLayout(slangRow, BoxLayout.LINE_AXIS));
+        slangRow.add(Box.createRigidArea(new Dimension(10, 0)));
+        slangRow.add(slangLabel);
+        slangRow.add(Box.createRigidArea(new Dimension(10, 0)));
+        slangRow.add(slangTextField);
+        slangRow.add(Box.createRigidArea(new Dimension(10, 0)));
+        JPanel meaningRow = new JPanel();
+        meaningRow.setLayout(new BoxLayout(meaningRow, BoxLayout.LINE_AXIS));
+        meaningRow.add(Box.createRigidArea(new Dimension(10, 0)));
+        meaningRow.add(meaningLabel);
+        meaningRow.add(Box.createRigidArea(new Dimension(23, 0)));
+        meaningRow.add(meaningTextField);
+        meaningRow.add(Box.createRigidArea(new Dimension(10, 0)));
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.PAGE_AXIS));
+        inputPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        inputPanel.add(slangRow, BorderLayout.PAGE_START);
+        inputPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        inputPanel.add(meaningRow, BorderLayout.PAGE_END);
+        inputPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JPanel buttonGroup = new JPanel();
+        buttonGroup.setLayout(new BoxLayout(buttonGroup, BoxLayout.LINE_AXIS));
+        JButton addBtn = new JButton("Add");
+        addBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SlangFunction controller = previous.getController();
+                String slang = slangTextField.getText();
+                String meaning = meaningTextField.getText();
+                if (slang.isEmpty() || meaning.isEmpty())
+                    return;
+                String exist = controller.findMeaning(slang, false);
+                if (exist.isEmpty()) { // new slang
+                    controller.addSlang(slang, meaning, true);
+                    JOptionPane.showMessageDialog(parentFrame, "Added new slang word");
+                    slangTextField.setText("");
+                    meaningTextField.setText("");
+                }
+                else {//slang exist
+                    //show popup for user to confirm
+                    int userChoice = JOptionPane.showConfirmDialog(null, "Slang is already exist, do you want to duplicate?\n (if you choose No, the slang is overwrited)");
+                    if (userChoice == 0) //Yes
+                        controller.addSlang(slang, meaning, true);
+                    else if (userChoice == 1) {//No
+                        controller.addSlang(slang, meaning, false);
+                    }
+                }
+            }
+        });
+        JButton backBtn = new JButton("Back");
+        backBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                slangTextField.setText("");
+                meaningTextField.setText("");
+                parentFrame.setContentPane(previous);
+                parentFrame.validate();
+            }
+        });
+        buttonGroup.add(addBtn);
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonGroup.add(backBtn);
+        JPanel buttonGroupPnl = new JPanel();
+        buttonGroupPnl.setLayout(new FlowLayout(FlowLayout.CENTER));
+        buttonGroupPnl.add(buttonGroup);
+
+        topPanel.add(labelPanel, BorderLayout.PAGE_START);
+        topPanel.add(inputPanel, BorderLayout.CENTER);
+        topPanel.add(buttonGroupPnl, BorderLayout.PAGE_END);
+
+        add(topPanel, BorderLayout.PAGE_START);
+    }
+}
+
 class searchResultPanel extends JPanel {
     JPanel previous;
     JFrame parentFrame;
@@ -74,15 +170,15 @@ class searchResultPanel extends JPanel {
         this.previous = pre;
         this.parentFrame = parentFrame;
         setLayout(new FlowLayout());
-        JButton edit = new JButton("Back");
-        edit.addActionListener(new ActionListener() {
+        JButton backBtn = new JButton("Back");
+        backBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 parentFrame.setContentPane(pre);
                 parentFrame.validate();
             }
         });
-        add(edit);
+        add(backBtn);
     }
 
 
@@ -111,6 +207,10 @@ class mainPanel extends JPanel {
         add(search, BorderLayout.PAGE_START);
         add(randomSlang, BorderLayout.CENTER);
         add(buttonGroup, BorderLayout.PAGE_END);
+    }
+
+    SlangFunction getController() {
+        return controller;
     }
 
     JScrollPane createSearchSection() {
@@ -157,12 +257,12 @@ class mainPanel extends JPanel {
                 String type = searchTypeCB.getSelectedItem().toString();
                 String keyword = searchTextField.getText();
                 if (type.equals("slang")) {
-                    String result = controller.findMeaning(keyword);
+                    String result = controller.findMeaning(keyword, true);
                     parentFrame.setContentPane(resultPanel);
                     parentFrame.validate();
                 }
                 else {
-                    HashSet<String> result = controller.findSlang(keyword);
+                    HashSet<String> result = controller.findSlang(keyword, true);
 //                    for (String i : result)
                 }
             }
@@ -177,19 +277,19 @@ class mainPanel extends JPanel {
         JPanel buttonGroup = new JPanel();
         buttonGroup.setLayout(new BoxLayout(buttonGroup, BoxLayout.LINE_AXIS));
 
-        JButton history = new JButton("History");
-        JButton add = new JButton("Add slang");
-        JButton quizz= new JButton("Quizz");
-        JButton reset = new JButton("Reset");
+        JButton historyBtn = new JButton("History");
+        JButton addBtn = new JButton("Add slang");
+        JButton quizzBtn= new JButton("Quizz");
+        JButton resetBtn = new JButton("Reset");
 
         buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
-        buttonGroup.add(history);
+        buttonGroup.add(historyBtn);
         buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
-        buttonGroup.add(add);
+        buttonGroup.add(addBtn);
         buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
-        buttonGroup.add(quizz);
+        buttonGroup.add(quizzBtn);
         buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
-        buttonGroup.add(reset);
+        buttonGroup.add(resetBtn);
         buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
 
         buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -197,17 +297,26 @@ class mainPanel extends JPanel {
         buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         historyPanel historyPnl = new historyPanel(this, parentFrame);
-        reset.addActionListener(new ActionListener() {
+        AddSlangPanel addSlangPnl = new AddSlangPanel(this, parentFrame);
+        resetBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 controller.reset();
             }
         });
-        history.addActionListener(new ActionListener() {
+        historyBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 historyPnl.historyToString(controller.getHistory());
                 parentFrame.setContentPane(historyPnl);
+                parentFrame.validate();
+            }
+        });
+
+        addBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.setContentPane(addSlangPnl);
                 parentFrame.validate();
             }
         });
@@ -332,18 +441,20 @@ class SlangFunction {
     }
 
     // return the meaning of an input keyword, if not found return ""
-    String findMeaning(String keyword) {
+    String findMeaning(String keyword, boolean saveToHistory) {
         keyword = keyword.trim();
-        history.add(keyword); // add keyword to history ArrayList for history function
+        if (saveToHistory)
+            history.add(keyword); // add keyword to history ArrayList for history function
        if (slangHashMap.get(keyword) == null) {
            return "";
        }
        return data.get(slangHashMap.get(keyword))[1];
     }
 
-    HashSet<String> findSlang(String keyword) {
+    HashSet<String> findSlang(String keyword, boolean saveToHistory) {
         keyword = keyword.trim();
-        history.add(keyword); // add keyword to history ArrayList for history function
+        if (saveToHistory)
+            history.add(keyword); // add keyword to history ArrayList for history function
         HashSet<Integer> result = new HashSet<Integer>();
         for (String key : meaningHashMap.keySet())
             if (key.contains(keyword))
@@ -358,10 +469,10 @@ class SlangFunction {
     void addSlang(String slang, String meaning, boolean duplicate) {
         slang = slang.trim();
         meaning = meaning.trim();
-        if (findMeaning(slang).isEmpty()) { // new slang
-            String[] newSlang = new String[2];
-            newSlang[0] = slang;
-            newSlang[1] = meaning;
+        String[] newSlang = new String[2];
+        newSlang[0] = slang;
+        newSlang[1] = meaning;
+        if (findMeaning(slang, false).isEmpty()) { // new slang
             slangHashMap.put(slang, data.size());
             meaningHashMap.put(meaning, data.size());
             data.add(newSlang);
@@ -370,9 +481,11 @@ class SlangFunction {
         String duplicateMeaning = data.get(slangHashMap.get(slang))[1];
         if (duplicate) { // duplicate meaning if slang exist
             duplicateMeaning = duplicateMeaning + " | " + meaning;
+            newSlang[1] = duplicateMeaning;
+            data.set(slangHashMap.get(slang), newSlang);
             return;
         }
-        duplicateMeaning = meaning; // overwrite meaning if slang exist
+        data.set(slangHashMap.get(slang), newSlang);
     }
 
     void editSlang(String oldMeaning, String newMeaning) {
