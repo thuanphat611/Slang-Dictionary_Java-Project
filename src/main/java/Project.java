@@ -120,8 +120,8 @@ class AddSlangPanel extends JPanel {
                 String meaning = meaningTextField.getText();
                 if (slang.isEmpty() || meaning.isEmpty())
                     return;
-                String exist = controller.findMeaning(slang, false);
-                if (exist.isEmpty()) { // new slang
+                String[] exist = controller.findBySlang(slang, false);
+                if (exist == null) { // new slang
                     controller.addSlang(slang, meaning, true);
                     JOptionPane.showMessageDialog(parentFrame, "Added new slang word");
                     slangTextField.setText("");
@@ -129,7 +129,7 @@ class AddSlangPanel extends JPanel {
                 }
                 else {//slang exist
                     //show popup for user to confirm
-                    int userChoice = JOptionPane.showConfirmDialog(null, "Slang is already exist, do you want to duplicate?\n (if you choose No, the slang is overwrited)");
+                    int userChoice = JOptionPane.showConfirmDialog(parentFrame, "Slang is already exist, do you want to duplicate?\n (if you choose No, the slang is overwrited)");
                     if (userChoice == 0) //Yes
                         controller.addSlang(slang, meaning, true);
                     else if (userChoice == 1) {//No
@@ -164,24 +164,135 @@ class AddSlangPanel extends JPanel {
 }
 
 class searchResultPanel extends JPanel {
-    JPanel previous;
+    mainPanel previous;
     JFrame parentFrame;
+    String searchBy;//"slang" | "definition"
+    JLabel searchLabel;
+    JPanel resultPanel;
     public searchResultPanel(mainPanel pre, JFrame parentFrame) {
         this.previous = pre;
         this.parentFrame = parentFrame;
-        setLayout(new FlowLayout());
+
+        setLayout(new BorderLayout());
+
+        this.resultPanel = new JPanel();
+        resultPanel.setLayout(new BoxLayout(this.resultPanel, BoxLayout.PAGE_AXIS));
+        this.searchLabel = new JLabel("Search result");
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        labelPanel.add(this.searchLabel);
+
+        JScrollPane resultSP = new JScrollPane(this.resultPanel);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         JButton backBtn = new JButton("Back");
+        buttonPanel.add(backBtn);
         backBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                parentFrame.setContentPane(pre);
+                parentFrame.setContentPane(previous);
                 parentFrame.validate();
             }
         });
-        add(backBtn);
+        add(labelPanel, BorderLayout.PAGE_START);
+        add(resultSP, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.PAGE_END);
     }
 
+    void setSearchBy(String method) {
+        this.searchBy = method;
+    }
 
+    String getSearchBy() {
+        return searchBy;
+    }
+
+    void setSearchLabel(String keyword) {
+        searchLabel.setText("Search result for \"" + keyword + "\"");
+    }
+
+    void setResultFindByMeaning(ArrayList<String[]> slangWords) {
+        this.resultPanel.removeAll();
+        if (slangWords.isEmpty()) {
+            JTextArea noResult = new JTextArea();
+            noResult.setWrapStyleWord(true);
+            noResult.setEditable(false);
+            noResult.setCaretColor(Color.WHITE);
+            noResult.setText("No result found \nMake sure you type the correct keyword and then try again.");
+            resultPanel.add(noResult);
+        }
+        for (String[] slangWord : slangWords)
+            resultPanel.add(resultToPanel(slangWord));
+    }
+
+    void setResultFindBySlang(String[] slangWord) {
+        this.resultPanel.removeAll();
+        if (slangWord == null) {
+            JTextArea noResult = new JTextArea();
+            noResult.setWrapStyleWord(true);
+            noResult.setEditable(false);
+            noResult.setCaretColor(Color.WHITE);
+            noResult.setText("No result found \nMake sure you type the correct keyword and then try again.");
+            resultPanel.add(noResult);
+        }
+        else {
+            resultPanel.add(resultToPanel(slangWord));
+        }
+    }
+
+    JPanel resultToPanel(String[] data) {
+        String slang = data[0];
+        String meaning = data[1];
+        JPanel resultItemPanel = new JPanel();
+        JPanel resultPanelWrapper = new JPanel();
+        resultItemPanel.setLayout(new BorderLayout());
+        resultItemPanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+
+        JPanel buttonGroupWrapper = new JPanel();
+        buttonGroupWrapper.setLayout(new FlowLayout(FlowLayout.CENTER));
+        JPanel buttonGroup = new JPanel();
+        buttonGroup.setLayout(new BoxLayout(buttonGroup, BoxLayout.LINE_AXIS));
+        buttonGroupWrapper.add(buttonGroup);
+        JButton editBtn = new JButton("Edit");
+        JButton deleteBtn = new JButton("Delete");
+
+        deleteBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int userChoice = JOptionPane.showConfirmDialog(parentFrame, "Do you really want to delete this slang word?");
+                if (userChoice == 0) {
+                    SlangFunction controller = previous.getController();
+                    controller.deleteSlang(slang);
+                    JOptionPane.showMessageDialog(parentFrame, "Delete success");
+                    resultPanel.remove(resultPanelWrapper);
+                    parentFrame.setContentPane(previous);
+                    parentFrame.validate();
+                }
+            }
+        });
+        buttonGroup.add(editBtn);
+        buttonGroup.add(Box.createRigidArea(new Dimension(10, 0)));
+        buttonGroup.add(deleteBtn);
+
+        JPanel slangPanel = new JPanel();
+        slangPanel.setLayout(new BoxLayout(slangPanel, BoxLayout.PAGE_AXIS));
+        JLabel slangLabel = new JLabel("Slang: " + slang);
+        JLabel meaningLabel = new JLabel("Meaning:");
+        slangPanel.add(slangLabel);
+        slangPanel.add(meaningLabel);
+
+        resultItemPanel.add(slangPanel, BorderLayout.LINE_START);
+        resultItemPanel.add(buttonGroupWrapper, BorderLayout.PAGE_END);
+        for (String i : meaning.split("\\|")) {
+            JLabel meaningText = new JLabel("-" + i.trim());
+            slangPanel.add(meaningText);
+        }
+
+        resultPanelWrapper.setLayout(new BorderLayout());
+        resultPanelWrapper.add(resultItemPanel, BorderLayout.PAGE_START);
+        return resultPanelWrapper;
+    }
 }
 
 class mainPanel extends JPanel {
@@ -228,8 +339,11 @@ class mainPanel extends JPanel {
         JLabel searchTypeLabel = new JLabel("Search by:");
         String[] searchTypeList = {"slang", "definition"};
         JComboBox searchTypeCB = new JComboBox(searchTypeList);
-        searchTypeCB.setPreferredSize(new Dimension(20, 20));
+        searchTypeCB.setPreferredSize(new Dimension(100, 25));
         JPanel searchType = new JPanel();
+        JPanel searchTypeWrapper = new JPanel();
+        searchTypeWrapper.setLayout(new FlowLayout(FlowLayout.LEFT));
+        searchTypeWrapper.add(searchType);
         searchType.setLayout(new BoxLayout(searchType, BoxLayout.LINE_AXIS));
         searchType.add(Box.createRigidArea(new Dimension(10, 0)));
         searchType.add(searchTypeLabel);
@@ -248,7 +362,7 @@ class mainPanel extends JPanel {
         searchPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         searchPanel.add(searchbar);
         searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        searchPanel.add(searchType);
+        searchPanel.add(searchTypeWrapper);
         searchPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
         searchResultPanel resultPanel = new searchResultPanel(this, parentFrame);
@@ -256,15 +370,23 @@ class mainPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String type = searchTypeCB.getSelectedItem().toString();
                 String keyword = searchTextField.getText();
+                resultPanel.setSearchBy(type);
+                resultPanel.setSearchLabel(keyword);
+
+                if (keyword.isEmpty())
+                    return;
+
                 if (type.equals("slang")) {
-                    String result = controller.findMeaning(keyword, true);
-                    parentFrame.setContentPane(resultPanel);
-                    parentFrame.validate();
+                    String[] result = controller.findBySlang(keyword, true);
+                    resultPanel.setResultFindBySlang(result);
                 }
                 else {
-                    HashSet<String> result = controller.findSlang(keyword, true);
-//                    for (String i : result)
+                    ArrayList<String[]> result = controller.findByMeaning(keyword, true);
+                    resultPanel.setResultFindByMeaning(result);
                 }
+                searchTextField.setText("");
+                parentFrame.setContentPane(resultPanel);
+                parentFrame.validate();
             }
         });
         return new JScrollPane(searchPanel);
@@ -301,7 +423,9 @@ class mainPanel extends JPanel {
         resetBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                controller.reset();
+                int userChoice = JOptionPane.showConfirmDialog(parentFrame, "Do you really want to reset what you have done so far?");
+                if (userChoice == 0)
+                    controller.reset();
             }
         });
         historyBtn.addActionListener(new ActionListener() {
@@ -372,13 +496,13 @@ class mainPanel extends JPanel {
             }
         });
 
-        randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         randomPanel.add(labelPanel);
         randomPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         randomPanel.add(textPane);
-        randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         randomPanel.add(buttonPanel);
-        randomPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        randomPanel.add(Box.createRigidArea(new Dimension(0, 5)));
 
         return new JScrollPane(randomPanel);
     }
@@ -391,6 +515,7 @@ class SlangUI extends JFrame {
     public void createAndShowGUI(String filePath) {
         setDefaultLookAndFeelDecorated(true);
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        this.setPreferredSize(new Dimension(500, 400));
 
         JPanel newContentPane = new mainPanel(filePath, this);
 
@@ -441,17 +566,17 @@ class SlangFunction {
     }
 
     // return the meaning of an input keyword, if not found return ""
-    String findMeaning(String keyword, boolean saveToHistory) {
+    String[] findBySlang(String keyword, boolean saveToHistory) {
         keyword = keyword.trim();
         if (saveToHistory)
             history.add(keyword); // add keyword to history ArrayList for history function
        if (slangHashMap.get(keyword) == null) {
-           return "";
+           return null;
        }
-       return data.get(slangHashMap.get(keyword))[1];
+       return data.get(slangHashMap.get(keyword));
     }
 
-    HashSet<String> findSlang(String keyword, boolean saveToHistory) {
+    ArrayList<String[]> findByMeaning(String keyword, boolean saveToHistory) {
         keyword = keyword.trim();
         if (saveToHistory)
             history.add(keyword); // add keyword to history ArrayList for history function
@@ -459,9 +584,9 @@ class SlangFunction {
         for (String key : meaningHashMap.keySet())
             if (key.contains(keyword))
                 result.add(meaningHashMap.get(key));
-        HashSet<String> slangList = new HashSet<String>();
+        ArrayList<String[]> slangList = new ArrayList<String[]>();
         for (int i : result) {
-            slangList.add(data.get(i)[0]);
+            slangList.add(data.get(i));
         }
         return slangList;
     }
@@ -472,7 +597,7 @@ class SlangFunction {
         String[] newSlang = new String[2];
         newSlang[0] = slang;
         newSlang[1] = meaning;
-        if (findMeaning(slang, false).isEmpty()) { // new slang
+        if (findBySlang(slang, false) == null) { // new slang
             slangHashMap.put(slang, data.size());
             meaningHashMap.put(meaning, data.size());
             data.add(newSlang);
@@ -621,23 +746,7 @@ class SlangFunction {
 public class Project {
     static final String filePath = "C:\\LTUD Java\\Project01\\slang.txt";
     public static void main(String[] args) {
-//        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-//            public void run() {
-//                SlangUI.createAndShowGUI(filePath);
-//            }
-//        });
         SlangUI app = new SlangUI("Slang Word");
         app.createAndShowGUI(filePath);
-
-//        SlangFunction sf = new SlangFunction(filePath);
-//        Set<Integer> result;
-//        result = sf.findSlang("one");
-//        if (result.isEmpty())
-//            System.out.println("empty");
-//        else
-//            for (int item : result)
-//                System.out.println(sf.findByIndex(item));
-//        sf.save();
-//        sf.print();
     }
 }
