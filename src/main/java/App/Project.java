@@ -1,21 +1,23 @@
+package App;
+
 import java.io.*;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.jar.JarEntry;
 import javax.swing.*;
 
 class historyPanel extends JPanel {
     JPanel previous;
     JFrame parentFrame;
-    String textPanelContent;
-    JTextPane historyText;
+    JPanel slangHistory;
     public historyPanel(JPanel pre, JFrame parentFrame) {
         this.previous = pre;
         this.parentFrame = parentFrame;
-        textPanelContent = "No history";
-        historyText = new JTextPane();
-        historyText.setText(textPanelContent);
+        slangHistory = new JPanel();
+        slangHistory.setLayout(new BoxLayout(slangHistory, BoxLayout.PAGE_AXIS));
+        JPanel slangHistoryWrapper = new JPanel();
+        slangHistoryWrapper.setLayout(new BorderLayout());
+        slangHistoryWrapper.add(slangHistory, BorderLayout.PAGE_START);
 
         setLayout(new BorderLayout());
 
@@ -27,9 +29,7 @@ class historyPanel extends JPanel {
         JPanel textPane = new JPanel();
         textPane.setLayout(new BoxLayout(textPane, BoxLayout.LINE_AXIS));
 
-        historyText.setEditable(false);
-        historyText.setCaretColor(Color.WHITE);
-        JScrollPane textSP = new JScrollPane(historyText);
+        JScrollPane textSP = new JScrollPane(slangHistoryWrapper);
 
         JButton backBtn = new JButton("Back");
         JPanel buttonPnl = new JPanel();
@@ -49,22 +49,31 @@ class historyPanel extends JPanel {
         add(buttonPnl, BorderLayout.PAGE_END);
     }
 
-    void historyToString(ArrayList<String> history) {
+    void historyToString(ArrayList<String[]> history) {
         if (history == null) {
             return;
         }
         if (history.isEmpty()) {
             return;
         }
-        textPanelContent = "";
-
-        for (int i = 0; i< history.size(); i++) {
-            textPanelContent = textPanelContent + history.get(i);
-            if (i != history.size() - 1)
-                textPanelContent = textPanelContent + "\n";
+        slangHistory.removeAll();
+        for (int i = 0; i < history.size(); i++) {
+            JPanel slangPanel = new JPanel();
+            slangPanel.setLayout(new BoxLayout(slangPanel, BoxLayout.PAGE_AXIS));
+            JLabel slangLabel = new JLabel("Slang: " + history.get(i)[0].trim());
+            JLabel meaningLabel = new JLabel("Meaning:");
+            slangPanel.add(slangLabel);
+            slangPanel.add(meaningLabel);
+            for (int j = 0; j < history.get(i)[1].split("\\|").length; j++) {
+                JLabel meaningItem = new JLabel("-" + history.get(i)[1].split("\\|")[j].trim());
+                slangPanel.add(meaningItem);
+            }
+            JPanel slangPanelWrapper = new JPanel();
+            slangPanelWrapper.setLayout(new BorderLayout());
+            slangPanelWrapper.add(slangPanel, BorderLayout.PAGE_START);
+            slangPanelWrapper.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+            slangHistory.add(slangPanelWrapper);
         }
-
-        historyText.setText(textPanelContent);
     }
 }
 
@@ -135,6 +144,8 @@ class AddSlangPanel extends JPanel {
                     else if (userChoice == 1) {//No
                         controller.addSlang(slang, meaning, false);
                     }
+                    slangTextField.setText("");
+                    meaningTextField.setText("");
                 }
             }
         });
@@ -349,6 +360,7 @@ class editSlangPanel extends JPanel {
                         newWord[1] = newWord[1] + " | " + textFieldList.get(i).getText().trim();
                     else
                         newWord[1] = textFieldList.get(i).getText().trim();
+
                 controller.editSlang(currentWord, newWord);
                 JOptionPane.showMessageDialog(parentFrame, "Edit slang word success");
                 for (JTextField tf : textFieldList)
@@ -441,11 +453,9 @@ class SlangQuizzPanel extends JPanel {
         answersPanel = new JPanel();
         answersPanel.setLayout(new BoxLayout(answersPanel, BoxLayout.PAGE_AXIS));
         questionNumber = new JLabel();
-        createQuizz();
 
         setLayout(new BorderLayout());
 
-//        JLabel panelLabel = new JLabel("Question");
         JPanel labelPanel = new JPanel();
         labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         labelPanel.add(questionNumber);
@@ -465,7 +475,7 @@ class SlangQuizzPanel extends JPanel {
                 currentQuestion = 1;
                 questionList = controller.slangQuizz();
                 numCorrect = 0;
-                createQuizz();
+                createQuizz(2);
                 parentFrame.setContentPane(previous);
                 parentFrame.validate();
             }
@@ -476,13 +486,18 @@ class SlangQuizzPanel extends JPanel {
         add(buttonPanelWrapper, BorderLayout.PAGE_END);
     }
 
-    void createQuizz() {
+    void createQuizz(int type) {
         questionNumber.setText("Question " + currentQuestion + "/5");
         answersPanel.removeAll();
 
         int answerIndex = (int) (Math.random() * 4);
 
-        JLabel questionLabel = new JLabel(questionList.get(answerIndex)[0] + " means:");
+        JLabel questionLabel = new JLabel();
+        if (type == 1)
+            questionLabel.setText(questionList.get(answerIndex)[0] + " means");
+        else
+            questionLabel.setText("slang for " + questionList.get(answerIndex)[1].split("\\|")[0].trim());
+
         JPanel question = new JPanel();
         question.setLayout(new FlowLayout(FlowLayout.CENTER));
         question.add(questionLabel);
@@ -490,11 +505,12 @@ class SlangQuizzPanel extends JPanel {
         answersPanel.add(questionSP);
         answersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        for (int i  = 0; i < questionList.size(); i++) {
+        if (type == 1)
+            for (int i  = 0; i < questionList.size(); i++) {
             int current = i;
             JPanel answer = new JPanel();
             answer.setLayout(new BorderLayout());
-            JButton answerBtn = new JButton(questionList.get(i)[1].split("\\|")[0]);
+            JButton answerBtn = new JButton(questionList.get(i)[1].split("\\|")[0].trim());
             answer.add(answerBtn, BorderLayout.CENTER);
             answersPanel.add(answer);
             answersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -512,10 +528,13 @@ class SlangQuizzPanel extends JPanel {
                     if (currentQuestion <= 5) {
                         SlangFunction controller = previous.getController();
                         questionList = controller.slangQuizz();
-                        createQuizz();
+                        createQuizz(1);
                     }
                     else {
                         JOptionPane.showMessageDialog(parentFrame, "Your score: " + numCorrect + "/5");
+                        currentQuestion = 1;
+                        numCorrect = 0;
+                        createQuizz(1);
                         parentFrame.setContentPane(previous);
                         parentFrame.validate();
                     }
@@ -523,6 +542,54 @@ class SlangQuizzPanel extends JPanel {
                 }
             });
         }
+        else
+            for (int i  = 0; i < questionList.size(); i++) {
+                int current = i;
+                JPanel answer = new JPanel();
+                answer.setLayout(new BorderLayout());
+                JButton answerBtn = new JButton(questionList.get(i)[0].trim());
+                answer.add(answerBtn, BorderLayout.CENTER);
+                answersPanel.add(answer);
+                answersPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+                answerBtn.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        boolean isAnswer = false;
+                        if (current == answerIndex)
+                            isAnswer = true;
+                        if (isAnswer)
+                            numCorrect++;
+                        currentQuestion++;
+
+                        if (currentQuestion <= 5) {
+                            SlangFunction controller = previous.getController();
+                            questionList = controller.slangQuizz();
+                            createQuizz(2);
+                        }
+                        else {
+                            JOptionPane.showMessageDialog(parentFrame, "Your score: " + numCorrect + "/5");
+                            currentQuestion = 1;
+                            numCorrect = 0;
+                            createQuizz(2);
+                            parentFrame.setContentPane(previous);
+                            parentFrame.validate();
+                        }
+
+                    }
+                });
+            }
+    }
+}
+
+class chooseQuizzTypePanel extends JPanel {
+    mainPanel previous;
+    JFrame parentFrame;
+    public chooseQuizzTypePanel(mainPanel pre, JFrame parent) {
+        this.previous = pre;
+        this.parentFrame = parent;
+
+        setPreferredSize(new Dimension(300, 200));
     }
 }
 
@@ -655,6 +722,11 @@ class mainPanel extends JPanel {
         quizzBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
+                chooseQuizzTypePanel userChoice = new chooseQuizzTypePanel(quizzPnl.previous, parentFrame);
+                String[] options = {"Slang Quizz", "Definition Quizz"};
+                int quizzMode = JOptionPane.showOptionDialog(parentFrame, "What kind of quizz you wanna try?", "Quizz mode", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                quizzPnl.createQuizz(quizzMode + 1);
                 parentFrame.setContentPane(quizzPnl);
                 parentFrame.validate();
             }
@@ -768,7 +840,7 @@ class SlangUI extends JFrame {
 
 class SlangFunction {
     ArrayList<String[]> data = new ArrayList<String[]>(); //used to store the data
-    ArrayList<String> history = new ArrayList<String>();
+    ArrayList<String[]> history = new ArrayList<String[]>();
     HashMap<String, Integer> slangHashMap = new HashMap<String, Integer>();
     HashMap<String, Integer> meaningHashMap = new HashMap<String, Integer>();
     String filePath;
@@ -808,18 +880,16 @@ class SlangFunction {
     // return the meaning of an input keyword, if not found return ""
     String[] findBySlang(String keyword, boolean saveToHistory) {
         keyword = keyword.trim();
-        if (saveToHistory)
-            history.add(keyword); // add keyword to history ArrayList for history function
        if (slangHashMap.get(keyword) == null) {
            return null;
        }
+        if (saveToHistory)
+            history.add(data.get(slangHashMap.get(keyword))); // add keyword to history ArrayList for history function
        return data.get(slangHashMap.get(keyword));
     }
 
     ArrayList<String[]> findByMeaning(String keyword, boolean saveToHistory) {
         keyword = keyword.trim();
-        if (saveToHistory)
-            history.add(keyword); // add keyword to history ArrayList for history function
         HashSet<Integer> result = new HashSet<Integer>();
         for (String key : meaningHashMap.keySet())
             if (key.contains(keyword))
@@ -827,6 +897,8 @@ class SlangFunction {
         ArrayList<String[]> slangList = new ArrayList<String[]>();
         for (int i : result) {
             slangList.add(data.get(i));
+            if (saveToHistory)
+                history.add(data.get(i)); // add keyword to history ArrayList for history function
         }
         return slangList;
     }
@@ -856,20 +928,8 @@ class SlangFunction {
     void editSlang(String[] oldWord, String[] newWord) {
         String oldSlang = oldWord[0].trim();
         String newSlang = newWord[0].trim();
-        boolean existed = false;
-        if (slangHashMap.get(newSlang) == null) {//change to a new slang
-            int index = slangHashMap.get(oldSlang);
-            slangHashMap.remove(oldSlang);
-            for (String j : oldWord[1].split("\\|"))
-                meaningHashMap.remove(j.trim());
-            data.remove(index);
 
-            slangHashMap.put(newSlang, index);
-            for (String i : newWord[1].split("\\|"))
-                meaningHashMap.put(i.trim(), index);
-            data.add(index, newWord);
-            return;
-        }
+        boolean existed = false;
         //Check if the user changes a slang word to an existing slang word
         if (slangHashMap.get(oldSlang) != slangHashMap.get(newSlang) && slangHashMap.get(newSlang) != null) {
             int index = slangHashMap.get(oldSlang);
@@ -892,7 +952,20 @@ class SlangFunction {
                     newMeaning[1] = newMeaningList[i].trim();
                 data.set(existedWordIndex, newMeaning);
             }
+            return;
         }
+
+        int index = slangHashMap.get(oldSlang);
+        slangHashMap.remove(oldSlang);
+        for (String j : oldWord[1].split("\\|"))
+            meaningHashMap.remove(j.trim());
+        data.remove(index);
+
+        slangHashMap.put(newSlang, index);
+        for (String i : newWord[1].split("\\|"))
+            meaningHashMap.put(i.trim(), index);
+        data.add(index, newWord);
+        return;
 
     }
 
@@ -901,7 +974,8 @@ class SlangFunction {
         int index = slangHashMap.get(slang);
         String[] meaningList = data.get(index)[1].split("\\|");
 
-        data.remove(index);
+        String[] nullSlang = {"", "slang is deleted"};
+        data.set(index, nullSlang);
         slangHashMap.remove(slang);
         for (String meaning : meaningList) {
             meaning = meaning.trim();
@@ -914,7 +988,7 @@ class SlangFunction {
         return data.get(random);
     }
 
-    ArrayList<String> getHistory() {
+    ArrayList<String[]> getHistory() {
         return history;
     }
 
@@ -946,6 +1020,8 @@ class SlangFunction {
             bw.write("Slag`Meaning");
             bw.newLine();
             for (int i = 0; i < data.size(); i++) {
+                if (data.get(i)[0].isEmpty())
+                    continue;
                 line = String.join("`", data.get(i));
                 bw.write(line);
                 if (i != data.size() - 1) {
