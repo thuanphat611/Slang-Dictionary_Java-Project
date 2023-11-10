@@ -10,7 +10,7 @@ public class SlangFunction {
     ArrayList<String[]> data = new ArrayList<String[]>(); //used to store the data
     ArrayList<String[]> history = new ArrayList<String[]>();
     HashMap<String, Integer> slangHashMap = new HashMap<String, Integer>();
-    HashMap<String, Integer> meaningHashMap = new HashMap<String, Integer>();
+        HashMap<String, Integer> meaningHashMap = new HashMap<String, Integer>();
     String filePath;
     public SlangFunction(String filePath) {
         BufferedReader br;
@@ -22,8 +22,6 @@ public class SlangFunction {
             int currentIndex = 0;
             br = new BufferedReader(new FileReader(filePath));
 
-            //remove the first line - instruction line(Slag`Meaning)
-            br.readLine();
             while ((line = br.readLine()) != null) {
                 data.add(line.split("`"));
                 slangHashMap.put(data.get(currentIndex)[0], currentIndex);//put slang into slang hashmap for fast searching
@@ -185,8 +183,6 @@ public class SlangFunction {
             String line;
             bw = new BufferedWriter(new FileWriter(filePath));
 
-            bw.write("Slag`Meaning");
-            bw.newLine();
             for (int i = 0; i < data.size(); i++) {
                 if (data.get(i)[0].isEmpty())
                     continue;
